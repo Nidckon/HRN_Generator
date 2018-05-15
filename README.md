@@ -1,8 +1,7 @@
 Topic of Engineer's Thesis: Technological demonstration of some hardware random number generators.
  # Useful links:
- 
-+[Engineer's Thesis](http://www.cs.put.poznan.pl/mmelosik/inz.html) - official informations of our topic  
-+[TODO List](https://todoist.com/)  
+-  [Engineer's Thesis](http://www.cs.put.poznan.pl/mmelosik/inz.html) - official informations of our topic  
+-  [TODO List](https://todoist.com/)  
 
 # Main Folders
 | Folder | README |
