@@ -1,6 +1,7 @@
-# HRN_Generator
-Topic of Engineer's Thesis: Technological demonstration of some hardware random number generators.
-# Useful links:
-
-[Engineer's Thesis](http://www.cs.put.poznan.pl/mmelosik/inz.html) - official informations of our topic  
-[TODO List](https://todoist.com/)  
+# Main Folders
+| Folder | README |
+|---------|------------|
+| Binary tests | [Binary_tests/README.md] |
+| Hardware generators | [Hardware_generators/README.md] |
+| Save to binary | [Save_to_binary/README.md] |
+| Website | [Website/README.md] |
