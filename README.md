@@ -9,6 +9,7 @@ Topic of Engineer's Thesis: Technological demonstration of some hardware random 
 |---------|------------|
 | Binary tests | [Binary_tests/README.md][BinT] |
 | Hardware generators | [Hardware_generators/README.md][HardG] |
+| Pictures | [Pictures/README.md][Pic] |
 | Save to binary | [Save_to_binary/README.md][SaveTB] |
 | Website | [Website/README.md][Web] |
 
@@ -16,5 +17,6 @@ Topic of Engineer's Thesis: Technological demonstration of some hardware random 
 [HardG]: <https://github.com/mikusnt/HRN_Generator/tree/master/Hardware_generators/README.md>
 [SaveTB]: <https://github.com/mikusnt/HRN_Generator/tree/master/Save_to_binary/README.md>
 [Web]: <https://github.com/mikusnt/HRN_Generator/tree/master/Website/README.md>
+[Pic]: <https://github.com/mikusnt/HRN_Generator/tree/master/Pictues/README.md>
 
 
