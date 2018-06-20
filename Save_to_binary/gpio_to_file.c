@@ -7,19 +7,26 @@
 #include <stdio.h>
 #include <wiringPi.h>
 #include <stdbool.h>
+#include <string.h>
 
-#define OUTPUT_PIN 4
-#define INPUT_PIN 17
+
+const unsigned char INPUT_PINS[] = { 21, 20, 16, 16 };
+const char *NAMES[] = { "op_amp", "sine", "lfsr", "a5/1"};
 
 // number of bytes to read from GPIO and save to file
 int bytes_count = 0;
 // delay between reads from GPIO in microseconds
 int read_delay_us = 0;
+// flag of von Neumann Correction
+bool v_correction = false;
+
+int input_number = 0;
+char filename[64] = {0};
 
 // to parse app arguments
 int parseInput(int argc, char* argv[]) {
 	if (argc < 4) {
-		printf("Missing arguments, required number of bytes to save, freq of bit reads and output filename\n");
+		printf("Missing arguments, required number of bytes to save, freq of bit reads, input id and output filename parameters\n");
 		return -1;
 	}
 	int temp = atoi(argv[1]);
@@ -34,15 +41,48 @@ int parseInput(int argc, char* argv[]) {
 		return -2;
 	}
 	temp = atoi(argv[2]);
+	
 	if (temp > 0)
 		read_delay_us = 1000000 / temp;
 	else {
 		printf("Freq of read must be greater than 0\n");
 		return -3;
 	}
+	temp = atoi(argv[3]);
+	if (temp >= 0 && temp <= 3)
+		input_number = temp;
+		
+	else {
+		printf("Uncorrect input id\n");
+		return -4;
+	}
+	
+	snprintf(filename, 64, "%s.bin", NAMES[input_number]);
+	if (argc > 4) {
+		if (strcmp(argv[4], "-v") == 0) {
+			v_correction = true;
+			
+		} else {
+			snprintf(filename, 64, "%s_%s.bin", NAMES[input_number], argv[4]);
+			if (argc > 5) {
+				if (strcmp(argv[5], "-v") == 0) {
+					v_correction = true;
+				}
+			}
+		}
+	} 
 	return 0;
 }
 
+// parse two byte number to char number, buffer pointer size must be 
+// greater than 8
+void charByte(char *buffer, unsigned char number) {
+	buffer[8] = 0;
+	for (int i = 7; i >= 0; i--) {
+		buffer[i] = number % 2 ? '1' : '0';
+		number >>= 1;
+	}
+}
 // parse two byte number to char number, buffer pointer size must be 
 // greater than 17
 void charShort(char *buffer, unsigned short number) {
@@ -73,49 +113,64 @@ int main(int argc, char* argv[]) {
 	 
 	// setting pinmodes and pull down resistor to input
 	//pinMode(OUTPUT_PIN, OUTPUT); // not used 
-	pinMode(INPUT_PIN, INPUT); 
-	pullUpDnControl(INPUT_PIN, PUD_DOWN);
+	pinMode(INPUT_PINS[input_number], INPUT); 
+	pullUpDnControl(INPUT_PINS[input_number], PUD_DOWN);
 	
 	// logic state from GPIO input
 	bool readed_data = false;
 	// byte number to save in binary file
-	unsigned short number_to_save = 0;
+	unsigned char number_to_save = 0;
 	// new bit position of bytes_to_save
 	unsigned char number_shl = 0;
 	// size of number (bytes)
-	const int NUMBER_SIZE = sizeof(unsigned short);
+	const int NUMBER_SIZE = sizeof(unsigned char);
 	// size of number (bits)
 	const int NUMBER_BIT_SIZE = NUMBER_SIZE * 8;
 	// buffer to rename number to char table
-	char charBuffer[18];
+	char charBuffer[NUMBER_BIT_SIZE + 1];
+	// count of printing numbers
 	int short_count = 0;
-	
-	/* We used two byte number to save, because fwrite writes two bytes 
-	 * word when bytes are in little endian sequential order. First one 
-	 * is less significant than second. Two byte in one fwrite resolve 
-	 * the problem.
-	 * Example:
-	 * 		to save: 		FF F0
-	 * 		one byte write:	F0 FF
-	 * 		two byte write: FF F0
-	 * */
+	// position in the v_table 
+	unsigned char v_position = 0;
+	// table of bits of von Neumann correction
+	unsigned char v_table[2] = { 0, 0 };
+	// skip write result
+	bool v_skip = false;
 	
 	// binary file to save numbers from GPIO
 	FILE *f;
-	f = fopen(argv[3], "wb");
+	f = fopen(filename, "wb");
 	
 	while (bytes_count > 0) {
-		readed_data = digitalRead(INPUT_PIN);
+		// von Neumann correction
+		if (v_correction) {
+			v_skip = true;
+			v_table[v_position++] = digitalRead(INPUT_PINS[input_number]);
+			if (v_position >= 2) {
+				if (v_table[0] != v_table[1]) {
+					readed_data = v_table[0];
+					v_skip = false;
+				} 
+				v_position = 0;
+			} 
+			if (v_skip) {
+				usleep(read_delay_us);
+				continue;
+			}
+			
+		} else {
+			readed_data = digitalRead(INPUT_PINS[input_number]);
+		}
 		// add logic state at right position
 		number_to_save |= readed_data << (NUMBER_BIT_SIZE - number_shl++ - 1);
 		// when all bits in number are saved
 		if (number_shl >= NUMBER_BIT_SIZE) {
-			charShort(charBuffer, number_to_save);
+			charByte(charBuffer, number_to_save);
 			printf("%d: %s\n", short_count++, charBuffer);
 			fwrite(&number_to_save, 1, NUMBER_SIZE, f);
 			number_shl = 0;
 			number_to_save = 0;
-			bytes_count-=2;
+			bytes_count--;
 			
 		}
 		usleep(read_delay_us);
