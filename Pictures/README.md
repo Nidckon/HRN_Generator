@@ -1,2 +1,2 @@
 # Pictures
-Useful pictures from first meetings. 
+Useful pictures from meetings. 
